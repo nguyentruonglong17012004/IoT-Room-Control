@@ -10,7 +10,7 @@ from sqlalchemy import (
     Float,
     Boolean,
     Enum,
-    Date,          # thêm Date
+    Date,
 )
 from sqlalchemy.types import JSON
 from sqlalchemy.orm import relationship
@@ -26,9 +26,9 @@ class User(Base):
     full_name = Column(String, nullable=True)
 
     # Thông tin hồ sơ nhân viên
-    date_of_birth = Column(Date, nullable=True)  # Ngày sinh
-    position = Column(String, nullable=True)     # Chức vụ trong công ty
-    start_date = Column(Date, nullable=True)     # Ngày bắt đầu làm việc
+    date_of_birth = Column(Date, nullable=True)
+    position = Column(String, nullable=True)
+    start_date = Column(Date, nullable=True)
 
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -41,13 +41,19 @@ class User(Base):
     # Phân quyền: "user" (mặc định) hoặc "admin"
     role = Column(String, nullable=False, default="user")
 
-    # Quan hệ 1-n với Device
     devices = relationship("Device", back_populates="owner")
 
-    # Quan hệ 1-n với Attendance (lịch sử check-in / check-out)
     attendance_records = relationship(
         "Attendance",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    # Quan hệ 1-1 với Presence (trạng thái online)
+    presence = relationship(
+        "Presence",
+        back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan",
     )
 
@@ -59,10 +65,6 @@ class DeviceType(str, enum.Enum):
 
 
 class Room(Base):
-    """
-    Phòng/vị trí vật lý (phòng họp, lớp học, phòng lab, ...)
-    """
-
     __tablename__ = "rooms"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -83,10 +85,6 @@ class Room(Base):
 
 
 class Device(Base):
-    """
-    Thiết bị IoT: đèn / quạt / điều hòa ...
-    """
-
     __tablename__ = "devices"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -97,19 +95,14 @@ class Device(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Integer, default=1)
 
-    # Thuộc phòng nào (có thể để null nếu chưa gán phòng)
     room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True)
-
-    # Loại thiết bị: đèn / quạt / điều hoà
     device_type = Column(Enum(DeviceType), nullable=True)
 
-    # Vị trí trên sơ đồ phòng (tuỳ chọn, dùng cho UI)
     pos_x = Column(Float, nullable=True)
     pos_y = Column(Float, nullable=True)
 
-    # Trạng thái hiện tại / setpoint
     is_on = Column(Boolean, default=False)
-    value = Column(Float, nullable=True)  # nhiệt độ AC, tốc độ quạt, v.v.
+    value = Column(Float, nullable=True)
 
     owner = relationship("User", back_populates="devices")
     telemetry = relationship("Telemetry", back_populates="device")
@@ -117,14 +110,6 @@ class Device(Base):
 
 
 class Telemetry(Base):
-    """
-    Dữ liệu đo được từ thiết bị:
-    - people_count
-    - room_temperature
-    - device_state
-    - hoặc bất cứ metric nào khác
-    """
-
     __tablename__ = "telemetry"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -138,12 +123,6 @@ class Telemetry(Base):
 
 
 class RoomStatus(Base):
-    """
-    Trạng thái tổng quát của phòng (dùng cho dashboard):
-    - số người hiện tại
-    - nhiệt độ phòng
-    """
-
     __tablename__ = "room_status"
 
     room_id = Column(Integer, ForeignKey("rooms.id"), primary_key=True)
@@ -159,13 +138,6 @@ class RoomStatus(Base):
 
 
 class Attendance(Base):
-    """
-    Lịch sử chấm công:
-    - Mỗi dòng = 1 ngày làm việc của một user
-    - check_in: thời điểm đầu tiên đăng nhập trong ngày
-    - check_out: thời điểm đăng xuất cuối cùng trong ngày
-    """
-
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -175,3 +147,19 @@ class Attendance(Base):
     check_out = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="attendance_records")
+
+
+class Presence(Base):
+    """
+    Trạng thái online của user để tính people_count trên dashboard.
+    Lưu ý: room_id ở đây là số phòng (1..4) theo ROOMS mẫu, không ràng buộc FK,
+    để bạn không cần phải seed bảng rooms trong DB.
+    """
+    __tablename__ = "presence"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    room_id = Column(Integer, nullable=True)  # (1..4) theo ROOMS mẫu
+    is_online = Column(Boolean, default=True)
+    last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="presence")

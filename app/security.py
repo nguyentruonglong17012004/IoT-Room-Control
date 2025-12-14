@@ -4,6 +4,8 @@ import smtplib
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from typing import Optional
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
 
 from fastapi import HTTPException, status
 from jose import jwt, JWTError
@@ -17,11 +19,33 @@ from app.schemas import UserCreate
 
 # NÊN cấu hình trong .env:
 # SECRET_KEY=chuoi_random_dai_va_bi_mat
-SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_ME_NOW")  # nhớ đổi trong .env
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY or SECRET_KEY == "CHANGE_ME_NOW" or len(SECRET_KEY) < 32:
+    raise RuntimeError("SECRET_KEY is missing/too short. Set a strong SECRET_KEY in .env (>=32 chars).")
+  # nhớ đổi trong .env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")  # mặc định 1 ngày
 )
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+def verify_token(token: str = Depends(oauth2_scheme)) -> dict:
+    """
+    Verify JWT access token (dùng cho các route cần bảo vệ nhưng không cần query DB).
+    Trả về payload nếu hợp lệ.
+    """
+    cred_exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Không thể xác thực người dùng",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("sub") is None:
+            raise cred_exc
+        return payload
+    except JWTError:
+        raise cred_exc
 
 # ====== PASSWORD HASHING ======
 

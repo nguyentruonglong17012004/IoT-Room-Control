@@ -114,6 +114,24 @@
       padding: 6px 0;
     }
 
+    /* thêm cho select để nhìn giống input */
+    .input-wrapper select {
+      border: none;
+      outline: none;
+      background: transparent;
+      flex: 1;
+      font-size: 14px;
+      padding: 6px 0;
+      color: #111;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    .input-wrapper select:invalid {
+      color: #9ca3af; /* màu placeholder khi chưa chọn */
+    }
+
     button.primary-btn {
       border: none;
       outline: none;
@@ -279,12 +297,20 @@
             </div>
           </div>
 
-          <!-- Chức vụ -->
+          <!-- Chức vụ: CHUYỂN THÀNH SELECT -->
           <div class="form-group">
             <label>Chức vụ</label>
             <div class="input-wrapper">
               <span class="icon">💼</span>
-              <input type="text" id="reg-position" placeholder="VD: Nhân viên kinh doanh" />
+              <select id="reg-position" required>
+                <option value="" disabled selected hidden>Chọn chức vụ</option>
+                <option value="Nhân viên kinh doanh">Nhân viên kinh doanh</option>
+                <option value="Nhân viên IoT">Nhân viên IoT</option>
+                <option value="Nhân viên kỹ thuật">Nhân viên kỹ thuật</option>
+                <option value="Nhân viên hành chính">Nhân viên hành chính</option>
+                <option value="Quản lý phòng">Quản lý phòng</option>
+                <option value="Khác">Khác</option>
+              </select>
             </div>
           </div>
 
@@ -349,7 +375,7 @@
     async function register() {
       const full_name = document.getElementById("reg-fullname").value.trim();
       const date_of_birth = document.getElementById("reg-dob").value; // yyyy-mm-dd
-      const position = document.getElementById("reg-position").value.trim();
+      const position = document.getElementById("reg-position").value; // lấy từ select
       const email = document.getElementById("reg-email").value.trim();
       const pass = document.getElementById("reg-pass").value.trim();
 

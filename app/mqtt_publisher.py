@@ -1,43 +1,86 @@
 # app/mqtt_publisher.py
 import json
+import logging
 import os
-from uuid import uuid4
+import socket
+import threading
+import uuid
+from typing import Optional
 
 import paho.mqtt.client as mqtt
 
+logger = logging.getLogger("mqtt_publisher")
+
 MQTT_BROKER_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_BROKER_PORT = int(os.getenv("MQTT_PORT", "1883"))
-MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
-MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
-MQTT_BASE_TOPIC = os.getenv("MQTT_BASE_TOPIC", "doctorx")
+
+MQTT_USERNAME = os.getenv("MQTT_USERNAME", "Khang")
+
+# BẮT BUỘC phải có password, không cho default (tránh lộ credential / chạy sai môi trường)
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+if not MQTT_PASSWORD:
+    raise RuntimeError("Missing MQTT_PASSWORD env var")
+
+MQTT_BASE_TOPIC = os.getenv("MQTT_BASE_TOPIC", "iot_room")
+
+_client: Optional[mqtt.Client] = None
+_client_lock = threading.Lock()
 
 
-def publish_device_command(device_id: str, command: dict, qos: int = 1) -> None:
-    """
-    Publish lệnh xuống thiết bị qua MQTT.
+def _make_client_id(prefix: str = "room_backend_publisher") -> str:
+    # Unique theo host + random -> chạy nhiều instance không đá nhau
+    host = socket.gethostname()
+    return f"{prefix}-{host}-{uuid.uuid4().hex[:8]}"
 
-    - Topic: {MQTT_BASE_TOPIC}/devices/{device_id}/commands
-      Ví dụ: doctorx/devices/ac01/commands
 
-    - command là 1 dict, ví dụ:
-      {
-        "device_id": "ac01",
-        "command_type": "set_temperature",
-        "payload": {"value": 24}
-      }
-    """
-    topic = f"{MQTT_BASE_TOPIC}/devices/{device_id}/commands"
+def _create_client() -> mqtt.Client:
+    client = mqtt.Client(
+        client_id=_make_client_id(),
+        protocol=mqtt.MQTTv311,
+        clean_session=True,
+    )
 
-    client_id = f"room_iot_cmd_{device_id}_{uuid4().hex[:8]}"
-    client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv311)
+    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
-    if MQTT_USERNAME:
-        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    logger.info(
+        "[MQTT] Connecting publisher to %s:%s as %s ...",
+        MQTT_BROKER_HOST,
+        MQTT_BROKER_PORT,
+        MQTT_USERNAME,
+    )
 
-    client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, keepalive=60)
+    rc = client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, keepalive=30)
+    if rc != mqtt.MQTT_ERR_SUCCESS:
+        raise RuntimeError(f"MQTT connect failed (rc={rc})")
+
     client.loop_start()
-    try:
-        client.publish(topic, json.dumps(command), qos=qos, retain=False)
-    finally:
-        client.loop_stop()
-        client.disconnect()
+    logger.info("[MQTT] Publisher connected.")
+    return client
+
+
+def _get_client() -> mqtt.Client:
+    global _client
+    with _client_lock:
+        if _client is not None and _client.is_connected():
+            return _client
+
+        if _client is not None:
+            logger.warning("[MQTT] Publisher lost connection, recreating...")
+
+        _client = _create_client()
+        return _client
+
+
+def publish_device_command(device_id: str, command: dict) -> None:
+    client = _get_client()
+
+    topic = f"{MQTT_BASE_TOPIC}/devices/{device_id}/commands"
+    payload = json.dumps(command, ensure_ascii=False)
+
+    logger.info('[MQTT-PUB] topic=%s payload=%s', topic, payload)
+
+    info = client.publish(topic, payload, qos=1, retain=False)
+    info.wait_for_publish(timeout=2.0)
+
+    if info.rc != mqtt.MQTT_ERR_SUCCESS:
+        raise RuntimeError(f"MQTT publish failed with rc={info.rc}")

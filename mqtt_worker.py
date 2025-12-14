@@ -1,6 +1,6 @@
+# mqtt_worker.py
 import json
 import logging
-import ssl
 import time
 from typing import Optional
 
@@ -8,22 +8,24 @@ import paho.mqtt.client as mqtt
 import requests
 from requests.exceptions import RequestException
 
-# ===== CONFIG =====
+# ===== MQTT CONFIG (KHÔNG TLS, PORT 1883) =====
 MQTT_HOST = "localhost"
-MQTT_PORT = 8883
-MQTT_USERNAME = "iot_worker"
-MQTT_PASSWORD = "Tiramixu17012004"  # không có dấu ngoặc
+MQTT_PORT = 1883
+MQTT_USERNAME = "Khang"          # nếu broker có auth thì điền vào
+MQTT_PASSWORD = "875664"
 
-# Topic: doctorx/devices/<device_id>/telemetry
-MQTT_TOPIC = "doctorx/devices/+/telemetry"
+# Base topic phải trùng với ESP32-CAM
+MQTT_BASE_TOPIC = "iot_room"
+# Telemetry topic mà ESP publish lên, ví dụ:
+# iot_room/devices/KD_LIGHT_1/telemetry
+MQTT_TOPIC = f"{MQTT_BASE_TOPIC}/devices/+/telemetry"
 
-CA_CERT_PATH = "certs_https/mqtt_certs/ca.crt"
-
-BACKEND_BASE_URL = "https://127.0.0.1:8443"
+# ===== BACKEND CONFIG =====
+# Backend FastAPI đang chạy ở http://127.0.0.1:8000
+BACKEND_BASE_URL = "http://127.0.0.1:8000"
 INGEST_PATH = "/ingest/telemetry"
 
 # API key mặc định nếu payload không gửi kèm api_key
-# Bạn có thể để trống nếu muốn device tự gửi api_key trong payload.
 DEFAULT_DEVICE_API_KEY = "567b73411887e261fa66201905a71f96"
 
 logging.basicConfig(
@@ -33,13 +35,10 @@ logging.basicConfig(
 
 INGEST_URL = f"{BACKEND_BASE_URL}{INGEST_PATH}"
 
-# Tắt warning verify self-signed cert local
-requests.packages.urllib3.disable_warnings()
-
 
 def extract_device_id_from_topic(topic: str) -> Optional[str]:
     """
-    Topic mặc định: doctorx/devices/<device_id>/telemetry
+    Topic mặc định: iot_room/devices/<device_id>/telemetry
     → Lấy <device_id> ra từ topic.
     """
     parts = topic.split("/")
@@ -55,7 +54,7 @@ def extract_device_id_from_topic(topic: str) -> Optional[str]:
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        logging.info("Connected to TLS MQTT broker %s:%s ...", MQTT_HOST, MQTT_PORT)
+        logging.info("Connected to MQTT broker %s:%s ...", MQTT_HOST, MQTT_PORT)
         client.subscribe(MQTT_TOPIC)
         logging.info("Subscribed to %s", MQTT_TOPIC)
     else:
@@ -85,7 +84,9 @@ def on_message(client, userdata, msg):
 
     api_key = data.get("api_key") or DEFAULT_DEVICE_API_KEY
     if not api_key:
-        logging.error("No api_key provided (payload + DEFAULT_DEVICE_API_KEY đều trống), skip.")
+        logging.error(
+            "No api_key provided (payload + DEFAULT_DEVICE_API_KEY đều trống), skip."
+        )
         return
 
     telemetry_payload = {
@@ -101,7 +102,6 @@ def on_message(client, userdata, msg):
             INGEST_URL,
             json=telemetry_payload,
             timeout=5,
-            verify=False,  # vì đang dùng self-signed cert local
         )
         logging.info("Forwarded telemetry to backend: %s", resp.status_code)
         if resp.status_code >= 400:
@@ -113,20 +113,13 @@ def on_message(client, userdata, msg):
 def main():
     client = mqtt.Client(client_id="room_iot_mqtt_ingestor")
 
-    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-
-    client.tls_set(
-        ca_certs=CA_CERT_PATH,
-        certfile=None,
-        keyfile=None,
-        tls_version=ssl.PROTOCOL_TLS_CLIENT,
-    )
-    client.tls_insecure_set(False)
+    if MQTT_USERNAME:
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
     client.on_connect = on_connect
     client.on_message = on_message
 
-    logging.info("Connecting to TLS MQTT broker %s:%s ...", MQTT_HOST, MQTT_PORT)
+    logging.info("Connecting to MQTT broker %s:%s ...", MQTT_HOST, MQTT_PORT)
     client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
 
     client.loop_start()

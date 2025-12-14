@@ -235,9 +235,7 @@
         display: flex;
         align-items: flex-start;
         justify-content: flex-start;
-
         background: transparent;
-
         box-shadow: 0 20px 45px rgba(15, 23, 42, 0.7);
         overflow: hidden;
         image-rendering: -webkit-optimize-contrast;
@@ -262,6 +260,84 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+      }
+
+      /* Cột camera bên phải */
+      .garden-sim-right {
+        position: relative;
+        z-index: 1;
+        margin-left: 70px;
+        flex: 0 0 920px;
+        max-width: 920px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .camera-card {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 18px;
+        padding: 14px 16px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+      }
+
+      .camera-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .camera-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .camera-subtitle {
+        font-size: 13px;
+        color: #9ca3af;
+        margin-top: 2px;
+      }
+
+      .btn-reload-camera {
+        border: none;
+        border-radius: 999px;
+        width: 34px;
+        height: 34px;
+        cursor: pointer;
+        background: #1d4ed8;
+        color: #e5e7eb;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.6);
+      }
+
+      .btn-reload-camera:hover {
+        background: #2563eb;
+      }
+
+      .camera-frame {
+        width: 100%;
+        aspect-ratio: 16 / 9; /* 16:9 */
+        background: #000;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .camera-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* lấp đầy khung, cắt viền đen */
+        background: #000;
+        display: block;
+      }
+
+      .camera-note {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #9ca3af;
       }
 
       .sim-summary-boxes {
@@ -291,7 +367,6 @@
         font-weight: 600;
       }
 
-      /* Nút tăng/giảm nhiệt độ */
       .temp-controls {
         display: inline-flex;
         align-items: center;
@@ -371,6 +446,7 @@
         color: #fca5a5;
       }
 
+      /* BUTTON TRẠNG THÁI BẬT/TẮT */
       .btn-toggle-device {
         border-radius: 999px;
         border: none;
@@ -378,15 +454,25 @@
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
+        transition: background 0.15s ease, box-shadow 0.15s ease,
+          transform 0.05s ease;
+      }
+
+      .btn-toggle-device.on {
         background: #22c55e;
         color: #052e16;
         box-shadow: 0 4px 10px rgba(34, 197, 94, 0.45);
       }
 
       .btn-toggle-device.off {
-        background: #4b5563;
-        color: #e5e7eb;
-        box-shadow: 0 4px 10px rgba(31, 41, 55, 0.6);
+        background: #ef4444;
+        color: #fee2e2;
+        box-shadow: 0 4px 10px rgba(248, 113, 113, 0.45);
+      }
+
+      .btn-toggle-device:active {
+        transform: translateY(1px);
+        box-shadow: none;
       }
 
       .realtime-clock {
@@ -528,14 +614,23 @@
         border-bottom: none;
       }
 
-      @media (max-width: 900px) {
+      @media (max-width: 1100px) {
         .garden-sim-card {
           flex-direction: column;
           min-height: 0;
         }
+        .garden-sim-right {
+          margin-left: 0;
+          margin-top: 16px;
+          max-width: 100%;
+          flex: 1 1 auto;
+        }
         .sim-summary-boxes {
           flex-direction: column;
         }
+      }
+
+      @media (max-width: 900px) {
         .account-grid {
           grid-template-columns: 1fr;
         }
@@ -587,30 +682,7 @@
             <div class="main-subtitle" id="main-subtitle">
               Xem số người trong phòng, nhiệt độ và điều khiển đèn / quạt.
             </div>
-
-            <div style="margin-top: 12px; font-size: 14px" id="room-select-row">
-              <label
-                for="room-select"
-                style="margin-right: 8px; color: #9ca3af"
-              >
-                Phòng:
-              </label>
-              <select
-                id="room-select"
-                style="
-                  padding: 6px 10px;
-                  border-radius: 999px;
-                  border: 1px solid #4b5563;
-                  background: #020617;
-                  color: #e5e7eb;
-                  min-width: 180px;
-                "
-              >
-                <option value="">Chưa có phòng nào</option>
-              </select>
-            </div>
           </div>
-
           <div class="user-box">
             <span class="user-name-pill" id="user-pill">user</span>
             <button id="btn-logout" class="btn-logout">Đăng xuất</button>
@@ -683,6 +755,39 @@
                   </table>
                 </div>
               </div>
+
+              <!-- CỘT CAMERA -->
+              <div class="garden-sim-right">
+                <div class="camera-card">
+                  <div class="camera-header">
+                    <div>
+                      <div class="camera-title">Camera phòng</div>
+                      <div class="camera-subtitle">
+                        Xem trực tiếp từ ESP32-CAM.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-reload-camera"
+                      id="btn-reload-camera"
+                      title="Reload stream"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  <div class="camera-frame">
+                    <img
+                      id="camera-stream"
+                      src=""
+                      alt="ESP32-CAM stream"
+                    />
+                  </div>
+                  <div class="camera-note">
+                    Nếu khung hình đen hoặc bị đứng, hãy bấm nút ↻ hoặc kiểm
+                    tra lại nguồn / WiFi của ESP32-CAM.
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -752,33 +857,28 @@
                   </div>
                 </div>
 
-<div class="account-card">
-  <div class="account-grid">
+                <div class="account-card">
+                  <div class="account-grid">
+                    <div>
+                      <div class="account-label">Họ và tên</div>
+                      <div class="account-value" id="acc-full-name">--</div>
+                    </div>
 
-    <div>
-      <div class="account-label">Họ và tên</div>
-      <!-- ĐÃ SỬA id thành acc-full-name -->
-      <div class="account-value" id="acc-full-name">--</div>
-    </div>
+                    <div>
+                      <div class="account-label">Ngày sinh</div>
+                      <div class="account-value" id="acc-dob">--</div>
+                    </div>
 
-    <div>
-      <div class="account-label">Ngày sinh</div>
-      <div class="account-value" id="acc-dob">--</div>
-    </div>
+                    <div>
+                      <div class="account-label">Chức vụ</div>
+                      <div class="account-value" id="acc-position">--</div>
+                    </div>
 
-    <div>
-      <div class="account-label">Chức vụ</div>
-      <div class="account-value" id="acc-position">--</div>
-    </div>
-
-    <div>
-      <div class="account-label">Bắt đầu làm việc</div>
-      <div class="account-value" id="acc-start-date">--</div>
-    </div>
-
-  </div>
-</div>
-
+                    <div>
+                      <div class="account-label">Bắt đầu làm việc</div>
+                      <div class="account-value" id="acc-start-date">--</div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="account-card">
@@ -832,7 +932,16 @@
     <!-- Đồng hồ thời gian thực -->
     <div class="realtime-clock" id="realtime-clock"></div>
 
-     <script>
+    <script>
+/* ================== CAMERA CONFIG (Option B) ==================
+   - Backend trả URL ngrok qua GET /system/config
+   - Nếu không có URL => fallback snapshot /camera/rooms/{id}/latest.jpg
+*/
+let CAMERA_STREAM_URL = "";
+let cameraTimer = null;
+
+
+
       /* ================== AUTH ================== */
       const token = localStorage.getItem("access_token");
       const userEmail = localStorage.getItem("user_email");
@@ -866,22 +975,16 @@
       const devicesOnEl = document.getElementById("sim-devices-on");
       const devicesTotalEl = document.getElementById("sim-devices-total");
       const devicesTbody = document.getElementById("devices-table-body");
-      const roomSelect = document.getElementById("room-select");
-
       const navItems = document.querySelectorAll(".nav-item");
       const dashboardSection = document.getElementById("section-dashboard");
       const historySection = document.getElementById("section-history");
       const accountSection = document.getElementById("section-account");
       const mainTitle = document.getElementById("main-title");
       const mainSubtitle = document.getElementById("main-subtitle");
-      const roomSelectRow = document.getElementById("room-select-row");
-
       const historyDeviceSelect = document.getElementById(
         "history-device-select"
       );
       const historyTableBody = document.getElementById("history-table-body");
-
-      // SỬA ID Ở ĐÂY: acc-full-name (không phải acc-fullname nữa)
       const accFullname = document.getElementById("acc-full-name");
       const accDob = document.getElementById("acc-dob");
       const accPosition = document.getElementById("acc-position");
@@ -893,15 +996,70 @@
         "checkin-history-wrapper"
       );
 
+      const cameraImg = document.getElementById("camera-stream");
+      const reloadCamBtn = document.getElementById("btn-reload-camera");
+
       let rooms = [];
       let currentRoomId = null;
 
-      // Máy lạnh & nhiệt độ hiện tại của phòng (nếu có)
       let currentAcDevice = null;
       let currentAcTemp = null;
 
-      // Thiết bị đang xem lịch sử
       let currentHistoryDeviceId = null;
+      /* ================== CAMERA (Option B) ================== */
+async function loadSystemConfig() {
+  try {
+    const cfg = await apiGet("/system/config");
+    const url =
+      cfg && cfg.camera_stream_url ? String(cfg.camera_stream_url).trim() : "";
+    CAMERA_STREAM_URL = url;
+  } catch (e) {
+    console.warn("Không load được /system/config, fallback snapshot.", e);
+    CAMERA_STREAM_URL = "";
+  }
+}
+
+function cacheBust(url) {
+  if (!url) return url;
+  return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+function setupCamera() {
+  if (!cameraImg) return;
+
+  // Có stream URL (ngrok) => dùng MJPEG stream luôn, KHÔNG setInterval snapshot nữa
+  if (CAMERA_STREAM_URL) {
+    if (cameraTimer) {
+      clearInterval(cameraTimer);
+      cameraTimer = null;
+    }
+
+    cameraImg.src = cacheBust(CAMERA_STREAM_URL);
+
+    if (reloadCamBtn) {
+      reloadCamBtn.onclick = () => {
+        cameraImg.src = cacheBust(CAMERA_STREAM_URL);
+      };
+    }
+    return;
+  }
+
+  // Fallback: snapshot qua backend (có token query để <img> load được)
+  const refreshSnapshot = () => {
+    const roomId = currentRoomId || 1;
+    const url = `/camera/rooms/${roomId}/latest.jpg?token=${encodeURIComponent(
+      token
+    )}&t=${Date.now()}`;
+    cameraImg.src = url;
+  };
+
+  refreshSnapshot();
+  if (cameraTimer) clearInterval(cameraTimer);
+  cameraTimer = setInterval(refreshSnapshot, 1000);
+
+  if (reloadCamBtn) reloadCamBtn.onclick = refreshSnapshot;
+}
+
 
       /* ================== ACCOUNT / ATTENDANCE ================== */
 
@@ -924,9 +1082,7 @@
         });
       }
 
-      // Load thông tin tài khoản + check-in/out
       async function populateAccountSection() {
-        // 1) Hồ sơ user từ /auth/me
         try {
           const profile = await apiGet("/auth/me");
 
@@ -947,7 +1103,6 @@
           accStartDate.textContent = "--";
         }
 
-        // 2) Check-in / check-out hôm nay từ /attendance/me/today
         try {
           const today = await apiGet("/attendance/me/today");
           accTodayCheckin.textContent = formatTimeHM(today.check_in);
@@ -958,7 +1113,6 @@
           accTodayCheckout.textContent = "--:--";
         }
 
-        // 3) Lịch sử nhiều ngày từ /attendance/me?days=30
         try {
           const history = await apiGet("/attendance/me?days=30");
           attendanceHistory = history.items || [];
@@ -1116,13 +1270,10 @@
         const status = room.status || {};
         const devices = room.devices || [];
 
-        // tìm máy lạnh trong phòng (nếu có)
         currentAcDevice = devices.find((d) => d.device_type === "AC") || null;
 
-        // số người
         peopleEl.textContent = status.people_count ?? 0;
 
-        // nhiệt độ
         if (currentAcDevice && currentAcDevice.value != null) {
           currentAcTemp = Number(currentAcDevice.value);
           tempEl.textContent = currentAcTemp.toFixed(1);
@@ -1134,15 +1285,12 @@
           tempEl.textContent = "--";
         }
 
-        // thiết bị
         const onCount = devices.filter((d) => d.is_on).length;
         devicesOnEl.textContent = onCount;
         devicesTotalEl.textContent = devices.length;
 
-        // cập nhật danh sách thiết bị cho tab lịch sử
         updateHistoryDeviceList(devices);
 
-        // bảng thiết bị
         devicesTbody.innerHTML = "";
         devices.forEach((d) => {
           const tr = document.createElement("tr");
@@ -1152,31 +1300,85 @@
           tr.innerHTML = `
             <td>${d.name || d.device_id}</td>
             <td><span class="device-type-pill">${typeLabel}</span></td>
-            <td class="${d.is_on ? "device-status-on" : "device-status-off"}">
+            <td class="device-status ${
+              d.is_on ? "device-status-on" : "device-status-off"
+            }">
               ${statusLabel}
             </td>
             <td>${formatDeviceValue(d)}</td>
             <td>${formatDevicePosition(d)}</td>
             <td>
-              <button class="btn-toggle-device ${d.is_on ? "" : "off"}"
-                data-device-id="${d.device_id}">
-                ${d.is_on ? "Tắt" : "Bật"}
+              <button class="btn-toggle-device ${
+                d.is_on ? "on" : "off"
+              }" data-device-id="${d.device_id}">
+                ${d.is_on ? "Bật" : "Tắt"}
               </button>
             </td>
           `;
           devicesTbody.appendChild(tr);
         });
 
-        // gán event toggle
+        // Gán event toggle (đổi UI ngay lập tức)
         devicesTbody.querySelectorAll(".btn-toggle-device").forEach((btn) => {
           btn.addEventListener("click", async (e) => {
-            const id = e.currentTarget.getAttribute("data-device-id");
+            const button = e.currentTarget;
+            const id = button.dataset.deviceId;
+            const row = button.closest("tr");
+            const statusCell = row?.querySelector(".device-status");
+
+            const wasOn = button.classList.contains("on");
+
+            // Đổi UI ngay (optimistic)
+            if (wasOn) {
+              // chuyển sang Tắt
+              button.classList.remove("on");
+              button.classList.add("off");
+              button.textContent = "Tắt";
+              if (statusCell) {
+                statusCell.textContent = "Tắt";
+                statusCell.classList.remove("device-status-on");
+                statusCell.classList.add("device-status-off");
+              }
+            } else {
+              // chuyển sang Bật
+              button.classList.remove("off");
+              button.classList.add("on");
+              button.textContent = "Bật";
+              if (statusCell) {
+                statusCell.textContent = "Bật";
+                statusCell.classList.remove("device-status-off");
+                statusCell.classList.add("device-status-on");
+              }
+            }
+
             try {
               await sendToggleCommand(id);
-              await refreshCurrentRoomStatus();
+              // sync lại sau 0.8s để số thiết bị đang bật, v.v. cập nhật
+              setTimeout(refreshCurrentRoomStatus, 800);
             } catch (err) {
               console.error("toggle error", err);
-              alert("Không gửi được lệnh tới thiết bị.");
+              alert("Không gửi được lệnh tới thiết bị, sẽ trả lại trạng thái cũ.");
+
+              // rollback UI
+              if (wasOn) {
+                button.classList.add("on");
+                button.classList.remove("off");
+                button.textContent = "Bật";
+                if (statusCell) {
+                  statusCell.textContent = "Bật";
+                  statusCell.classList.add("device-status-on");
+                  statusCell.classList.remove("device-status-off");
+                }
+              } else {
+                button.classList.add("off");
+                button.classList.remove("on");
+                button.textContent = "Tắt";
+                if (statusCell) {
+                  statusCell.textContent = "Tắt";
+                  statusCell.classList.remove("device-status-on");
+                  statusCell.classList.add("device-status-off");
+                }
+              }
             }
           });
         });
@@ -1208,42 +1410,16 @@
         }
 
         if (!rooms || rooms.length === 0) {
-          rooms = [
-            { id: 1, name: "Phòng Kinh Doanh" },
-            { id: 2, name: "Phòng Marketing" },
-            { id: 3, name: "Phòng Kế Toán" },
-            { id: 4, name: "Phòng Nhân Sự" },
-          ];
+          rooms = [{ id: 1, name: "Phòng Kinh Doanh - Sales Office" }];
         }
 
-        if (!rooms.length) {
-          roomSelect.innerHTML =
-            '<option value="">Chưa có phòng nào</option>';
-          return;
-        }
-
-        roomSelect.innerHTML = rooms
-          .map(
-            (r) =>
-              `<option value="${r.id}">${r.name}${
-                r.description ? " - " + r.description : ""
-              }</option>`
-          )
-          .join("");
-
-        currentRoomId = rooms[0].id;
-        roomSelect.value = String(currentRoomId);
-
-        roomSelect.addEventListener("change", () => {
-          const val = roomSelect.value;
-          currentRoomId = val ? parseInt(val, 10) : null;
-          refreshCurrentRoomStatus();
-        });
+        const first = rooms[0];
+        currentRoomId = first.id;
 
         await refreshCurrentRoomStatus();
       }
 
-      /* ====== Điều chỉnh nhiệt độ (nút + / -) ====== */
+      /* ====== Điều chỉnh nhiệt độ ====== */
 
       async function adjustTemperature(delta) {
         if (!currentAcDevice) {
@@ -1366,14 +1542,12 @@
           const section = btn.dataset.section;
 
           navItems.forEach((b) => b.classList.remove("active"));
-          btn.addEventListener("click", () => {});
           btn.classList.add("active");
 
           if (section === "history") {
             dashboardSection.style.display = "none";
             historySection.style.display = "flex";
             accountSection.style.display = "none";
-            roomSelectRow.style.display = "block";
 
             mainTitle.textContent = "Lịch sử thiết bị";
             mainSubtitle.textContent =
@@ -1389,7 +1563,6 @@
             dashboardSection.style.display = "none";
             historySection.style.display = "none";
             accountSection.style.display = "flex";
-            roomSelectRow.style.display = "none";
 
             mainTitle.textContent = "Tài khoản nhân viên";
             mainSubtitle.textContent =
@@ -1397,11 +1570,9 @@
 
             populateAccountSection();
           } else {
-            // dashboard & devices hiện cùng dashboard
             dashboardSection.style.display = "flex";
             historySection.style.display = "none";
             accountSection.style.display = "none";
-            roomSelectRow.style.display = "block";
 
             mainTitle.textContent = "Dashboard phòng";
             mainSubtitle.textContent =
@@ -1440,9 +1611,14 @@
       applyDashboardTheme();
       setInterval(applyDashboardTheme, 10 * 60 * 1000);
 
-      /* ================== BOOT ================== */
-      initRooms();
-      setInterval(refreshCurrentRoomStatus, 10000);
+/* ================== BOOT ================== */
+(async () => {
+  await loadSystemConfig();
+  await initRooms();
+  setupCamera();
+  setInterval(refreshCurrentRoomStatus, 10000);
+})();
+
     </script>
   </body>
 </html>

@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
-from app.models import User, Attendance
+from app.models import User, Attendance, Presence
 from app.schemas import (
     UserCreate,
     UserOut,
@@ -29,13 +29,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ================== HELPER: ATTENDANCE (CHECK-IN / CHECK-OUT) ==================
 
-
 def _register_check_in(db: Session, user: User) -> None:
     """
-    Ghi nhận thời gian check-in cho user:
-    - Mỗi ngày một dòng trên bảng Attendance.
-    - Nếu hôm nay chưa có bản ghi -> tạo mới với check_in = now.
-    - Nếu đã có mà check_in vẫn None -> cập nhật check_in = now.
+    - Nếu hôm nay chưa có -> tạo mới check_in = now
+    - Nếu đã có mà check_in đang None -> set check_in = now
+    - Nếu đã có check_in rồi -> không làm gì
     """
     today = date.today()
     record = (
@@ -43,8 +41,7 @@ def _register_check_in(db: Session, user: User) -> None:
         .filter(Attendance.user_id == user.id, Attendance.date == today)
         .first()
     )
-    # DÙNG GIỜ LOCAL THAY VÌ UTC
-    now = datetime.now()
+    now = datetime.now()  # giữ logic của bạn: giờ local
 
     if not record:
         record = Attendance(
@@ -55,6 +52,7 @@ def _register_check_in(db: Session, user: User) -> None:
         )
         db.add(record)
     else:
+        if record.check_in is None:
             record.check_in = now
 
     db.commit()
@@ -62,9 +60,8 @@ def _register_check_in(db: Session, user: User) -> None:
 
 def _register_check_out(db: Session, user: User) -> None:
     """
-    Ghi nhận thời gian check-out cho user:
-    - Nếu hôm nay chưa có bản ghi -> tạo mới với check_out = now.
-    - Nếu đã có -> cập nhật check_out = now.
+    - Nếu hôm nay chưa có -> tạo mới check_out = now
+    - Nếu đã có -> cập nhật check_out = now
     """
     today = date.today()
     record = (
@@ -72,8 +69,7 @@ def _register_check_out(db: Session, user: User) -> None:
         .filter(Attendance.user_id == user.id, Attendance.date == today)
         .first()
     )
-    # DÙNG GIỜ LOCAL THAY VÌ UTC
-    now = datetime.now()
+    now = datetime.now()  # giữ logic của bạn: giờ local
 
     if not record:
         record = Attendance(
@@ -88,26 +84,35 @@ def _register_check_out(db: Session, user: User) -> None:
 
     db.commit()
 
-# ================== REGISTER ==================
 
+# ================== HELPER: PRESENCE (ONLINE/OFFLINE) ==================
+
+def _set_online(db: Session, user: User, room_id: int | None = 1) -> None:
+    now = datetime.utcnow()
+    row = db.query(Presence).filter(Presence.user_id == user.id).first()
+    if not row:
+        row = Presence(user_id=user.id, room_id=room_id, is_online=True, last_seen=now)
+        db.add(row)
+    else:
+        row.room_id = room_id
+        row.is_online = True
+        row.last_seen = now
+    db.commit()
+
+
+def _set_offline(db: Session, user: User) -> None:
+    now = datetime.utcnow()
+    row = db.query(Presence).filter(Presence.user_id == user.id).first()
+    if row:
+        row.is_online = False
+        row.last_seen = now
+        db.commit()
+
+
+# ================== REGISTER ==================
 
 @router.post("/register", response_model=UserOut)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    """
-    Đăng ký tài khoản mới.
-
-    Frontend gửi JSON:
-    {
-      "email": "...",
-      "password": "...",
-      "full_name": "...",
-      "date_of_birth": "YYYY-MM-DD",
-      "position": "Chức vụ"
-    }
-
-    start_date sẽ được tự động set = ngày đăng ký (date.today()).
-    """
-    # Kiểm tra trùng email
     existing = get_user_by_email(db, user_in.email)
     if existing:
         raise HTTPException(
@@ -115,7 +120,6 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="Email đã được đăng ký",
         )
 
-    # Tạo user mới, role mặc định = "user"
     user = User(
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
@@ -123,7 +127,6 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         date_of_birth=user_in.date_of_birth,
         position=user_in.position,
         start_date=date.today(),
-        # các field cũ giữ lại cho tương thích
         gender=user_in.gender,
         weight_kg=user_in.weight_kg,
         height_cm=user_in.height_cm,
@@ -138,16 +141,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 # ================== LOGIN ==================
 
-
 @router.post("/login", response_model=Token)
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    """
-    Đăng nhập bằng email + password.
-    - Frontend gửi form: username=email, password=...
-    """
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -155,53 +153,41 @@ def login(
             detail="Sai email hoặc mật khẩu",
         )
 
-    # Ghi nhận check-in cho ngày hiện tại
     _register_check_in(db, user)
+
+    # online (mặc định room_id=1 theo ROOMS mẫu)
+    _set_online(db, user, room_id=1)
 
     access_token = create_access_token({"sub": str(user.id)})
     return Token(access_token=access_token)
 
 
-# ================== ME (THÔNG TIN TÀI KHOẢN) ==================
-
+# ================== ME ==================
 
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
-    """
-    Trả về thông tin tài khoản hiện tại (dùng cho tab 'Tài khoản').
-    """
     return current_user
 
 
-# ================== LOGOUT (CHECK-OUT) ==================
-
+# ================== LOGOUT ==================
 
 @router.post("/logout")
 def logout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Đăng xuất:
-    - Ghi nhận thời gian check-out cho ngày hiện tại.
-    - Frontend sau đó tự xoá token ở localStorage.
-    """
     _register_check_out(db, current_user)
+    _set_offline(db, current_user)
     return {"message": "Đã ghi nhận check-out."}
 
 
 # ================== FORGOT / RESET PASSWORD ==================
-
 
 @router.post("/forgot-password")
 def forgot_password(
     payload: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Nhận email, nếu tồn tại thì gửi mail reset (nếu cấu hình SMTP).
-    Không tiết lộ email có tồn tại hay không.
-    """
     user = get_user_by_email(db, payload.email)
 
     if user:
@@ -209,12 +195,9 @@ def forgot_password(
         try:
             send_password_reset_email(user.email, reset_token)
         except Exception as e:
-            # Có thể log ra thay vì print
             print("Lỗi gửi email reset mật khẩu:", e)
 
-    return {
-        "message": "Nếu email tồn tại trong hệ thống, đường dẫn đặt lại mật khẩu đã được gửi."
-    }
+    return {"message": "Nếu email tồn tại trong hệ thống, đường dẫn đặt lại mật khẩu đã được gửi."}
 
 
 @router.post("/reset-password")
@@ -222,9 +205,6 @@ def reset_password(
     data: ResetPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Đặt lại mật khẩu bằng token.
-    """
     user_id = verify_password_reset_token(data.token)
     if not user_id:
         raise HTTPException(
