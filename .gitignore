@@ -1,10 +1,16 @@
+# secrets
+.env
+.env.*
+
+# venv
 venv/
+.venv/
+
+# db
+*.db
+*.sqlite
+*.sqlite3
+
+# cache
 __pycache__/
 *.pyc
-
-.env
-*.db
-certs_https/
-mqtt_passwd.txt
-mosquitto_data/
-IoT Control Room/
