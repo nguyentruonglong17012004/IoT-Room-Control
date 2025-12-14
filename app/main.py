@@ -19,7 +19,11 @@ from app.api.routes_system import router as system_router
 from app.api.routes_admin import router as admin_router
 from app.api.routes_attendance import router as attendance_router
 from fastapi.middleware.cors import CORSMiddleware
-
+# ==== App chính ====
+app = FastAPI(title="IoT Room Controlr")
+@app.on_event("startup")
+def _startup_db():
+    Base.metadata.create_all(bind=engine)
 origins = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
@@ -40,11 +44,7 @@ print("DEBUG SECRET_KEY LEN =", len(os.getenv("SECRET_KEY") or ""))
 
 
 
-# ==== App chính ====
-app = FastAPI(title="DoctorX IoT Water Tracker")
-@app.on_event("startup")
-def _startup_db():
-    Base.metadata.create_all(bind=engine)
+
 
 # ==== Static (nếu bạn có css/js riêng) ====
 FRONTEND_DIR = ROOT_DIR / "frontend"
