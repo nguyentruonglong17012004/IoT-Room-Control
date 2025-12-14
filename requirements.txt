@@ -7,3 +7,5 @@ passlib
 email-validator
 requests
 paho-mqtt
+python-multipart
+bcrypt
