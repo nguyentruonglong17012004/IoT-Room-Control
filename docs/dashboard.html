@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>IoT Room Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        color: #e5e7eb;
+        min-height: 100vh;
+        zoom: 0.8;
+        background-color: #020617;
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+      }
+
+      .app-shell {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+
+      .sidebar {
+        width: 350px;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        padding: 22px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        border-right: 1px solid rgba(15, 23, 42, 0.7);
+        box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+      }
+
+      .sidebar-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 32px;
+        border-radius: 16px;
+        background: radial-gradient(circle at top left, #137cf5d8, #14213d 60%);
+        text-align: center;
+      }
+
+      .sidebar-brand-text-main {
+        font-size: 25px;
+        font-weight: 700;
+      }
+
+      .sidebar-brand-text-sub {
+        font-size: 15px;
+        color: #9ca3af;
+        margin-top: 4px;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        margin-top: 4px;
+        gap: 50px;
+        justify-content: flex-start;
+      }
+
+      .nav-label-heading {
+        font-size: 30px;
+        letter-spacing: 10px;
+        text-transform: uppercase;
+        color: #6b7280;
+        padding: 0 4px 4px;
+      }
+
+      .nav-item {
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        padding: 12px 16px;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #cbd5f5;
+        background: transparent;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.1s ease;
+      }
+
+      .nav-item:hover {
+        background: rgba(148, 163, 184, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .nav-item.active {
+        background: linear-gradient(90deg, #22d3ee, #1b3ef0);
+        color: #0f172a;
+        box-shadow: 0 10px 24px rgba(34, 211, 238, 0.45);
+      }
+
+      .nav-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        flex-shrink: 0;
+      }
+
+      .nav-item.active .nav-icon {
+        background: rgba(15, 23, 42, 0.1);
+      }
+
+      .nav-text-main {
+        font-size: 25px;
+      }
+
+      .nav-text-sub {
+        font-size: 20px;
+        color: #9ca3af;
+      }
+
+      .nav-item.active .nav-text-sub {
+        color: #0f172a;
+      }
+
+      /* MAIN */
+
+      .main-area {
+        flex: 1;
+        padding: 22px 26px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding: 14px 18px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.75);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.7);
+      }
+
+      .main-title {
+        font-size: 40px;
+        font-weight: 700;
+      }
+
+      .main-subtitle {
+        font-size: 20px;
+        color: #9ca3af;
+        margin-top: 4px;
+      }
+
+      .user-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(15, 23, 42, 0.7);
+        padding: 6px 10px;
+        border-radius: 999px;
+      }
+
+      .user-name-pill {
+        padding: 10px 15px;
+        border-radius: 999px;
+        background: rgba(55, 65, 81, 0.8);
+        font-size: 15px;
+      }
+
+      .btn-logout {
+        border: none;
+        border-radius: 999px;
+        padding: 15px 40px;
+        font-size: 20px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #ef4444;
+        color: #fee2e2;
+        box-shadow: 0 6px 14px rgba(248, 113, 113, 0.4);
+        transition: transform 0.1s ease, box-shadow 0.1s ease,
+          background 0.1s ease;
+      }
+
+      .btn-logout:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(248, 113, 113, 0.6);
+        background: #dc2626;
+      }
+
+      /* SECTIONS WRAPPER */
+
+      .section-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .garden-sim {
+        margin-top: -20px;
+        width: 100%;
+        flex: 1;
+        display: flex;
+      }
+
+      .garden-sim-card {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        min-height: calc(100vh - 170px);
+        margin: 0;
+        border-radius: 24px;
+        padding: 28px 32px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background: transparent;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.7);
+        overflow: hidden;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+      }
+
+      .garden-sim-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        pointer-events: none;
+      }
+
+      .garden-sim-left {
+        position: relative;
+        z-index: 1;
+        max-width: 900px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* Cột camera bên phải */
+      .garden-sim-right {
+        position: relative;
+        z-index: 1;
+        margin-left: 70px;
+        flex: 0 0 920px;
+        max-width: 920px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .camera-card {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 18px;
+        padding: 14px 16px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+      }
+
+      .camera-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .camera-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .camera-subtitle {
+        font-size: 13px;
+        color: #9ca3af;
+        margin-top: 2px;
+      }
+
+      .btn-reload-camera {
+        border: none;
+        border-radius: 999px;
+        width: 34px;
+        height: 34px;
+        cursor: pointer;
+        background: #1d4ed8;
+        color: #e5e7eb;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.6);
+      }
+
+      .btn-reload-camera:hover {
+        background: #2563eb;
+      }
+
+      .camera-frame {
+        width: 100%;
+        aspect-ratio: 16 / 9; /* 16:9 */
+        background: #000;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .camera-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* lấp đầy khung, cắt viền đen */
+        background: #000;
+        display: block;
+      }
+
+      .camera-note {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+
+      .sim-summary-boxes {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .sim-summary-box {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.8);
+        border-radius: 18px;
+        padding: 10px 14px;
+        backdrop-filter: blur(6px);
+      }
+
+      .sim-summary-title {
+        font-size: 13px;
+        color: #d1d5db;
+        margin-bottom: 4px;
+      }
+
+      .sim-summary-value {
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .temp-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .temp-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid #4b5563;
+        background: rgba(15, 23, 42, 0.9);
+        color: #e5e7eb;
+        font-size: 18px;
+        line-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .temp-btn:hover {
+        background: rgba(55, 65, 81, 0.9);
+      }
+
+      .devices-table-wrapper {
+        position: relative;
+        z-index: 1;
+        margin-top: 20px;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 18px;
+        padding: 16px 18px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+      }
+
+      .devices-table-title {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      .devices-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .devices-table th,
+      .devices-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.8);
+        text-align: left;
+      }
+
+      .devices-table th {
+        font-weight: 600;
+        color: #9ca3af;
+      }
+
+      .devices-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .device-type-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: rgba(31, 41, 55, 0.9);
+      }
+
+      .device-status-on {
+        color: #bbf7d0;
+      }
+
+      .device-status-off {
+        color: #fca5a5;
+      }
+
+      /* BUTTON TRẠNG THÁI BẬT/TẮT */
+      .btn-toggle-device {
+        border-radius: 999px;
+        border: none;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease, box-shadow 0.15s ease,
+          transform 0.05s ease;
+      }
+
+      .btn-toggle-device.on {
+        background: #22c55e;
+        color: #052e16;
+        box-shadow: 0 4px 10px rgba(34, 197, 94, 0.45);
+      }
+
+      .btn-toggle-device.off {
+        background: #ef4444;
+        color: #fee2e2;
+        box-shadow: 0 4px 10px rgba(248, 113, 113, 0.45);
+      }
+
+      .btn-toggle-device:active {
+        transform: translateY(1px);
+        box-shadow: none;
+      }
+
+      .realtime-clock {
+        position: fixed;
+        bottom: 10px;
+        right: 20px;
+        z-index: 50;
+        padding: 20px 40px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.85);
+        color: #e5e7eb;
+        font-size: 25px;
+        font-weight: 500;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(10px);
+      }
+
+      /* HISTORY SECTION */
+
+      .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .history-filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      .history-filters select {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid #4b5563;
+        background: #020617;
+        color: #e5e7eb;
+        min-width: 200px;
+      }
+
+      .history-card,
+      .account-card {
+        position: relative;
+        z-index: 1;
+        margin-top: 10px;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 18px;
+        padding: 16px 18px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+      }
+
+      .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .history-table th,
+      .history-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.8);
+        text-align: left;
+      }
+
+      .history-table th {
+        font-weight: 600;
+        color: #9ca3af;
+      }
+
+      .history-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .history-event-on {
+        color: #bbf7d0;
+      }
+
+      .history-event-off {
+        color: #fca5a5;
+      }
+
+      /* ACCOUNT SECTION */
+
+      .account-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 40px;
+        font-size: 15px;
+      }
+
+      .account-label {
+        color: #9ca3af;
+        margin-bottom: 2px;
+      }
+
+      .account-value {
+        font-weight: 500;
+      }
+
+      .account-checkin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn-link {
+        border: none;
+        background: transparent;
+        color: #38bdf8;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: underline;
+        padding: 0;
+      }
+
+      .checkin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+
+      .checkin-table th,
+      .checkin-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.8);
+        text-align: left;
+      }
+
+      .checkin-table th {
+        font-weight: 600;
+        color: #9ca3af;
+      }
+
+      .checkin-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      @media (max-width: 1100px) {
+        .garden-sim-card {
+          flex-direction: column;
+          min-height: 0;
+        }
+        .garden-sim-right {
+          margin-left: 0;
+          margin-top: 16px;
+          max-width: 100%;
+          flex: 1 1 auto;
+        }
+        .sim-summary-boxes {
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .account-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand-text-main">IoT Room Control</div>
+          <div class="sidebar-brand-text-sub">Monitor · Control · Save</div>
+        </div>
+
+        <div class="sidebar-nav">
+          <div class="nav-label-heading">MENU</div>
+
+          <button class="nav-item active" data-section="dashboard">
+            <div class="nav-icon">🏠</div>
+            <div>
+              <div class="nav-text-main">Dashboard</div>
+              <div class="nav-text-sub">Giám sát phòng & thiết bị</div>
+            </div>
+          </button>
+          <button class="nav-item" data-section="history">
+            <div class="nav-icon">📈</div>
+            <div>
+              <div class="nav-text-main">Lịch sử</div>
+              <div class="nav-text-sub">Telemetry & log</div>
+            </div>
+          </button>
+
+          <button class="nav-item" data-section="account">
+            <div class="nav-icon">👤</div>
+            <div>
+              <div class="nav-text-main">Tài khoản</div>
+              <div class="nav-text-sub">Thông tin nhân viên</div>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main-area">
+        <header class="main-header">
+          <div>
+            <div class="main-title" id="main-title">Dashboard phòng</div>
+            <div class="main-subtitle" id="main-subtitle">
+              Xem số người trong phòng, nhiệt độ và điều khiển đèn / quạt.
+            </div>
+          </div>
+          <div class="user-box">
+            <span class="user-name-pill" id="user-pill">user</span>
+            <button id="btn-logout" class="btn-logout">Đăng xuất</button>
+          </div>
+        </header>
+
+        <div class="section-wrapper">
+          <!-- DASHBOARD SECTION -->
+          <section id="section-dashboard" class="garden-sim">
+            <div class="garden-sim-card" id="sim-bg">
+              <div class="garden-sim-left">
+                <!-- 3 ô tổng quan -->
+                <div class="sim-summary-boxes">
+                  <div class="sim-summary-box">
+                    <div class="sim-summary-title">Số người trong phòng</div>
+                    <div class="sim-summary-value">
+                      <span id="sim-people-count">0</span>
+                    </div>
+                  </div>
+
+                  <div class="sim-summary-box">
+                    <div class="sim-summary-title">Nhiệt độ phòng</div>
+                    <div class="sim-summary-value">
+                      <div class="temp-controls">
+                        <button
+                          type="button"
+                          class="temp-btn"
+                          id="temp-decrease"
+                        >
+                          −
+                        </button>
+                        <span id="sim-room-temp">--</span> °C
+                        <button
+                          type="button"
+                          class="temp-btn"
+                          id="temp-increase"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sim-summary-box">
+                    <div class="sim-summary-title">Thiết bị đang bật</div>
+                    <div class="sim-summary-value">
+                      <span id="sim-devices-on">0</span> /
+                      <span id="sim-devices-total">0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bảng thiết bị -->
+                <div class="devices-table-wrapper">
+                  <h3 class="devices-table-title">
+                    Danh sách thiết bị trong phòng
+                  </h3>
+                  <table class="devices-table">
+                    <thead>
+                      <tr>
+                        <th>Tên</th>
+                        <th>Loại</th>
+                        <th>Trạng thái</th>
+                        <th>Giá trị</th>
+                        <th>Vị trí</th>
+                        <th>Điều khiển</th>
+                      </tr>
+                    </thead>
+                    <tbody id="devices-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- CỘT CAMERA -->
+              <div class="garden-sim-right">
+                <div class="camera-card">
+                  <div class="camera-header">
+                    <div>
+                      <div class="camera-title">Camera phòng</div>
+                      <div class="camera-subtitle">
+                        Xem trực tiếp từ ESP32-CAM.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-reload-camera"
+                      id="btn-reload-camera"
+                      title="Reload stream"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  <div class="camera-frame">
+                    <img
+                      id="camera-stream"
+                      src=""
+                      alt="ESP32-CAM stream"
+                    />
+                  </div>
+                  <div class="camera-note">
+                    Nếu khung hình đen hoặc bị đứng, hãy bấm nút ↻ hoặc kiểm
+                    tra lại nguồn / WiFi của ESP32-CAM.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- HISTORY SECTION -->
+          <section
+            id="section-history"
+            class="garden-sim"
+            style="display: none"
+          >
+            <div class="garden-sim-card">
+              <div class="garden-sim-left">
+                <div class="history-header">
+                  <div>
+                    <div style="font-size: 24px; font-weight: 600">
+                      Lịch sử thiết bị
+                    </div>
+                    <div style="font-size: 15px; color: #9ca3af; margin-top: 4px">
+                      Xem các lần bật / tắt và telemetry theo từng thiết bị.
+                    </div>
+                  </div>
+
+                  <div class="history-filters">
+                    <span style="color: #9ca3af">Thiết bị:</span>
+                    <select id="history-device-select">
+                      <option value="">Chưa có thiết bị</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="history-card">
+                  <table class="history-table">
+                    <thead>
+                      <tr>
+                        <th>Thời gian</th>
+                        <th>Sự kiện</th>
+                        <th>Giá trị</th>
+                        <th>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                      <tr>
+                        <td colspan="4">Chưa có dữ liệu.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ACCOUNT SECTION -->
+          <section
+            id="section-account"
+            class="garden-sim"
+            style="display: none"
+          >
+            <div class="garden-sim-card">
+              <div class="garden-sim-left">
+                <div style="margin-bottom: 12px">
+                  <div style="font-size: 24px; font-weight: 600">
+                    Thông tin nhân viên
+                  </div>
+                  <div
+                    style="font-size: 15px; color: #9ca3af; margin-top: 4px"
+                  >
+                    Xem hồ sơ và lịch sử check-in / check-out.
+                  </div>
+                </div>
+
+                <div class="account-card">
+                  <div class="account-grid">
+                    <div>
+                      <div class="account-label">Họ và tên</div>
+                      <div class="account-value" id="acc-full-name">--</div>
+                    </div>
+
+                    <div>
+                      <div class="account-label">Ngày sinh</div>
+                      <div class="account-value" id="acc-dob">--</div>
+                    </div>
+
+                    <div>
+                      <div class="account-label">Chức vụ</div>
+                      <div class="account-value" id="acc-position">--</div>
+                    </div>
+
+                    <div>
+                      <div class="account-label">Bắt đầu làm việc</div>
+                      <div class="account-value" id="acc-start-date">--</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="account-card">
+                  <div class="account-checkin-header">
+                    <div>
+                      <div class="account-label">
+                        Thời gian check-in / check-out hôm nay
+                      </div>
+                      <div class="account-value">
+                        Check-in:
+                        <span id="acc-today-checkin">--:--</span> · Check-out:
+                        <span id="acc-today-checkout">--:--</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-link"
+                      id="btn-toggle-checkin-history"
+                    >
+                      Xem lịch sử chi tiết
+                    </button>
+                  </div>
+
+                  <div
+                    id="checkin-history-wrapper"
+                    style="margin-top: 10px; display: none"
+                  >
+                    <table class="checkin-table">
+                      <thead>
+                        <tr>
+                          <th>Ngày</th>
+                          <th>Check-in</th>
+                          <th>Check-out</th>
+                        </tr>
+                      </thead>
+                      <tbody id="checkin-table-body">
+                        <tr>
+                          <td colspan="3">Chưa có dữ liệu.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Đồng hồ thời gian thực -->
+    <div class="realtime-clock" id="realtime-clock"></div>
+
+    <script>
+/* ================== CAMERA CONFIG (Option B) ==================
+   - Backend trả URL ngrok qua GET /system/config
+   - Nếu không có URL => fallback snapshot /camera/rooms/{id}/latest.jpg
+*/
+let CAMERA_STREAM_URL = "";
+let cameraTimer = null;
+
+
+
+      /* ================== AUTH ================== */
+      const token = localStorage.getItem("access_token");
+      const userEmail = localStorage.getItem("user_email");
+      if (!token) window.location.href = "/app";
+
+      const userPill = document.getElementById("user-pill");
+      if (userEmail) {
+        userPill.textContent = userEmail.split("@")[0];
+      }
+
+      // Đăng xuất = check-out
+      document.getElementById("btn-logout").onclick = async () => {
+        try {
+          await fetch("/auth/logout", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + token,
+            },
+          });
+        } catch (err) {
+          console.error("Logout error", err);
+        }
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user_email");
+        window.location.href = "/app";
+      };
+
+      /* ================== DOM ELEMENTS ================== */
+      const peopleEl = document.getElementById("sim-people-count");
+      const tempEl = document.getElementById("sim-room-temp");
+      const devicesOnEl = document.getElementById("sim-devices-on");
+      const devicesTotalEl = document.getElementById("sim-devices-total");
+      const devicesTbody = document.getElementById("devices-table-body");
+      const navItems = document.querySelectorAll(".nav-item");
+      const dashboardSection = document.getElementById("section-dashboard");
+      const historySection = document.getElementById("section-history");
+      const accountSection = document.getElementById("section-account");
+      const mainTitle = document.getElementById("main-title");
+      const mainSubtitle = document.getElementById("main-subtitle");
+      const historyDeviceSelect = document.getElementById(
+        "history-device-select"
+      );
+      const historyTableBody = document.getElementById("history-table-body");
+      const accFullname = document.getElementById("acc-full-name");
+      const accDob = document.getElementById("acc-dob");
+      const accPosition = document.getElementById("acc-position");
+      const accStartDate = document.getElementById("acc-start-date");
+      const accTodayCheckin = document.getElementById("acc-today-checkin");
+      const accTodayCheckout = document.getElementById("acc-today-checkout");
+      const checkinTableBody = document.getElementById("checkin-table-body");
+      const checkinHistoryWrapper = document.getElementById(
+        "checkin-history-wrapper"
+      );
+
+      const cameraImg = document.getElementById("camera-stream");
+      const reloadCamBtn = document.getElementById("btn-reload-camera");
+
+      let rooms = [];
+      let currentRoomId = null;
+
+      let currentAcDevice = null;
+      let currentAcTemp = null;
+
+      let currentHistoryDeviceId = null;
+      /* ================== CAMERA (Option B) ================== */
+async function loadSystemConfig() {
+  try {
+    const cfg = await apiGet("/system/config");
+    const url =
+      cfg && cfg.camera_stream_url ? String(cfg.camera_stream_url).trim() : "";
+    CAMERA_STREAM_URL = url;
+  } catch (e) {
+    console.warn("Không load được /system/config, fallback snapshot.", e);
+    CAMERA_STREAM_URL = "";
+  }
+}
+
+function cacheBust(url) {
+  if (!url) return url;
+  return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+function setupCamera() {
+  if (!cameraImg) return;
+
+  // Có stream URL (ngrok) => dùng MJPEG stream luôn, KHÔNG setInterval snapshot nữa
+  if (CAMERA_STREAM_URL) {
+    if (cameraTimer) {
+      clearInterval(cameraTimer);
+      cameraTimer = null;
+    }
+
+    cameraImg.src = cacheBust(CAMERA_STREAM_URL);
+
+    if (reloadCamBtn) {
+      reloadCamBtn.onclick = () => {
+        cameraImg.src = cacheBust(CAMERA_STREAM_URL);
+      };
+    }
+    return;
+  }
+
+  // Fallback: snapshot qua backend (có token query để <img> load được)
+  const refreshSnapshot = () => {
+    const roomId = currentRoomId || 1;
+    const url = `/camera/rooms/${roomId}/latest.jpg?token=${encodeURIComponent(
+      token
+    )}&t=${Date.now()}`;
+    cameraImg.src = url;
+  };
+
+  refreshSnapshot();
+  if (cameraTimer) clearInterval(cameraTimer);
+  cameraTimer = setInterval(refreshSnapshot, 1000);
+
+  if (reloadCamBtn) reloadCamBtn.onclick = refreshSnapshot;
+}
+
+
+      /* ================== ACCOUNT / ATTENDANCE ================== */
+
+      let attendanceHistory = [];
+
+      function formatDateVN(iso) {
+        if (!iso) return "--";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleDateString("vi-VN");
+      }
+
+      function formatTimeHM(iso) {
+        if (!iso) return "--:--";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "--:--";
+        return d.toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      async function populateAccountSection() {
+        try {
+          const profile = await apiGet("/auth/me");
+
+          accFullname.textContent =
+            profile.full_name || profile.email || userEmail || "--";
+          accDob.textContent = profile.date_of_birth
+            ? formatDateVN(profile.date_of_birth)
+            : "--";
+          accPosition.textContent = profile.position || "--";
+          accStartDate.textContent = profile.start_date
+            ? formatDateVN(profile.start_date)
+            : "--";
+        } catch (err) {
+          console.error("Không lấy được thông tin hồ sơ", err);
+          accFullname.textContent = userEmail || "--";
+          accDob.textContent = "--";
+          accPosition.textContent = "--";
+          accStartDate.textContent = "--";
+        }
+
+        try {
+          const today = await apiGet("/attendance/me/today");
+          accTodayCheckin.textContent = formatTimeHM(today.check_in);
+          accTodayCheckout.textContent = formatTimeHM(today.check_out);
+        } catch (err) {
+          console.error("Không lấy được chấm công hôm nay", err);
+          accTodayCheckin.textContent = "--:--";
+          accTodayCheckout.textContent = "--:--";
+        }
+
+        try {
+          const history = await apiGet("/attendance/me?days=30");
+          attendanceHistory = history.items || [];
+        } catch (err) {
+          console.error("Không lấy được lịch sử chấm công", err);
+          attendanceHistory = [];
+        }
+
+        if (!attendanceHistory.length) {
+          checkinTableBody.innerHTML =
+            '<tr><td colspan="3">Chưa có dữ liệu.</td></tr>';
+          return;
+        }
+
+        checkinTableBody.innerHTML = attendanceHistory
+          .map(
+            (row) => `
+              <tr>
+                <td>${formatDateVN(row.date)}</td>
+                <td>${row.check_in ? formatTimeHM(row.check_in) : ""}</td>
+                <td>${row.check_out ? formatTimeHM(row.check_out) : ""}</td>
+              </tr>
+            `
+          )
+          .join("");
+      }
+
+      document
+        .getElementById("btn-toggle-checkin-history")
+        .addEventListener("click", () => {
+          if (checkinHistoryWrapper.style.display === "none") {
+            checkinHistoryWrapper.style.display = "block";
+          } else {
+            checkinHistoryWrapper.style.display = "none";
+          }
+        });
+
+      /* ================== API HELPERS ================== */
+
+      async function apiGet(path) {
+        const res = await fetch(path, {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("GET", path, res.status, text);
+          throw new Error("Request failed");
+        }
+        return res.json();
+      }
+
+      async function apiPost(path, body) {
+        const res = await fetch(path, {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("POST", path, res.status, text);
+          throw new Error("Request failed");
+        }
+        return res.json().catch(() => ({}));
+      }
+
+      async function fetchRooms() {
+        return apiGet("/rooms");
+      }
+
+      async function fetchRoomStatus(roomId) {
+        return apiGet(`/rooms/${roomId}/status`);
+      }
+
+      async function sendToggleCommand(deviceId) {
+        return apiPost(`/devices/${encodeURIComponent(deviceId)}/commands`, {
+          command_type: "toggle",
+          payload: {},
+        });
+      }
+
+      async function fetchDeviceTelemetry(deviceId, limit = 200) {
+        return apiGet(
+          `/devices/${encodeURIComponent(deviceId)}/telemetry?limit=${limit}`
+        );
+      }
+
+      /* ================== UI HELPERS ================== */
+
+      function mapDeviceType(type) {
+        if (!type) return "-";
+        switch (type) {
+          case "LIGHT":
+            return "Đèn";
+          case "FAN":
+            return "Quạt";
+          case "AC":
+            return "Điều hòa";
+          default:
+            return type;
+        }
+      }
+
+      function formatDeviceValue(device) {
+        if (device.value == null) return "–";
+        if (device.device_type === "AC") {
+          return device.value + " °C";
+        }
+        if (device.device_type === "FAN") {
+          return "Cấp " + device.value;
+        }
+        return String(device.value);
+      }
+
+      function formatDevicePosition(device) {
+        if (device.pos_x == null || device.pos_y == null) return "–";
+        return `(${device.pos_x}, ${device.pos_y})`;
+      }
+
+      function updateHistoryDeviceList(devices) {
+        if (!devices || !devices.length) {
+          historyDeviceSelect.innerHTML =
+            '<option value="">Không có thiết bị</option>';
+          currentHistoryDeviceId = null;
+          historyTableBody.innerHTML =
+            '<tr><td colspan="4">Chưa có dữ liệu.</td></tr>';
+          return;
+        }
+
+        const options = devices
+          .map(
+            (d) =>
+              `<option value="${d.device_id}">${d.name || d.device_id} (${
+                mapDeviceType(d.device_type) || ""
+              })</option>`
+          )
+          .join("");
+
+        historyDeviceSelect.innerHTML = options;
+
+        if (
+          !currentHistoryDeviceId ||
+          !devices.some((d) => d.device_id === currentHistoryDeviceId)
+        ) {
+          currentHistoryDeviceId = devices[0].device_id;
+        }
+        historyDeviceSelect.value = currentHistoryDeviceId;
+      }
+
+      function updateRoomUI(room) {
+        const status = room.status || {};
+        const devices = room.devices || [];
+
+        currentAcDevice = devices.find((d) => d.device_type === "AC") || null;
+
+        peopleEl.textContent = status.people_count ?? 0;
+
+        if (currentAcDevice && currentAcDevice.value != null) {
+          currentAcTemp = Number(currentAcDevice.value);
+          tempEl.textContent = currentAcTemp.toFixed(1);
+        } else if (status.temperature != null) {
+          currentAcTemp = Number(status.temperature);
+          tempEl.textContent = currentAcTemp.toFixed(1);
+        } else {
+          currentAcTemp = null;
+          tempEl.textContent = "--";
+        }
+
+        const onCount = devices.filter((d) => d.is_on).length;
+        devicesOnEl.textContent = onCount;
+        devicesTotalEl.textContent = devices.length;
+
+        updateHistoryDeviceList(devices);
+
+        devicesTbody.innerHTML = "";
+        devices.forEach((d) => {
+          const tr = document.createElement("tr");
+          const typeLabel = mapDeviceType(d.device_type);
+          const statusLabel = d.is_on ? "Bật" : "Tắt";
+
+          tr.innerHTML = `
+            <td>${d.name || d.device_id}</td>
+            <td><span class="device-type-pill">${typeLabel}</span></td>
+            <td class="device-status ${
+              d.is_on ? "device-status-on" : "device-status-off"
+            }">
+              ${statusLabel}
+            </td>
+            <td>${formatDeviceValue(d)}</td>
+            <td>${formatDevicePosition(d)}</td>
+            <td>
+              <button class="btn-toggle-device ${
+                d.is_on ? "on" : "off"
+              }" data-device-id="${d.device_id}">
+                ${d.is_on ? "Bật" : "Tắt"}
+              </button>
+            </td>
+          `;
+          devicesTbody.appendChild(tr);
+        });
+
+        // Gán event toggle (đổi UI ngay lập tức)
+        devicesTbody.querySelectorAll(".btn-toggle-device").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            const button = e.currentTarget;
+            const id = button.dataset.deviceId;
+            const row = button.closest("tr");
+            const statusCell = row?.querySelector(".device-status");
+
+            const wasOn = button.classList.contains("on");
+
+            // Đổi UI ngay (optimistic)
+            if (wasOn) {
+              // chuyển sang Tắt
+              button.classList.remove("on");
+              button.classList.add("off");
+              button.textContent = "Tắt";
+              if (statusCell) {
+                statusCell.textContent = "Tắt";
+                statusCell.classList.remove("device-status-on");
+                statusCell.classList.add("device-status-off");
+              }
+            } else {
+              // chuyển sang Bật
+              button.classList.remove("off");
+              button.classList.add("on");
+              button.textContent = "Bật";
+              if (statusCell) {
+                statusCell.textContent = "Bật";
+                statusCell.classList.remove("device-status-off");
+                statusCell.classList.add("device-status-on");
+              }
+            }
+
+            try {
+              await sendToggleCommand(id);
+              // sync lại sau 0.8s để số thiết bị đang bật, v.v. cập nhật
+              setTimeout(refreshCurrentRoomStatus, 800);
+            } catch (err) {
+              console.error("toggle error", err);
+              alert("Không gửi được lệnh tới thiết bị, sẽ trả lại trạng thái cũ.");
+
+              // rollback UI
+              if (wasOn) {
+                button.classList.add("on");
+                button.classList.remove("off");
+                button.textContent = "Bật";
+                if (statusCell) {
+                  statusCell.textContent = "Bật";
+                  statusCell.classList.add("device-status-on");
+                  statusCell.classList.remove("device-status-off");
+                }
+              } else {
+                button.classList.add("off");
+                button.classList.remove("on");
+                button.textContent = "Tắt";
+                if (statusCell) {
+                  statusCell.textContent = "Tắt";
+                  statusCell.classList.remove("device-status-on");
+                  statusCell.classList.add("device-status-off");
+                }
+              }
+            }
+          });
+        });
+      }
+
+      async function refreshCurrentRoomStatus() {
+        if (!currentRoomId) return;
+        try {
+          const data = await fetchRoomStatus(currentRoomId);
+          const room = data.room || data;
+          updateRoomUI(room);
+          if (
+            historySection.style.display !== "none" &&
+            currentHistoryDeviceId
+          ) {
+            loadDeviceHistory(currentHistoryDeviceId);
+          }
+        } catch (err) {
+          console.error("refreshCurrentRoomStatus error", err);
+        }
+      }
+
+      async function initRooms() {
+        try {
+          rooms = await fetchRooms();
+        } catch (err) {
+          console.error("initRooms error", err);
+          rooms = [];
+        }
+
+        if (!rooms || rooms.length === 0) {
+          rooms = [{ id: 1, name: "Phòng Kinh Doanh - Sales Office" }];
+        }
+
+        const first = rooms[0];
+        currentRoomId = first.id;
+
+        await refreshCurrentRoomStatus();
+      }
+
+      /* ====== Điều chỉnh nhiệt độ ====== */
+
+      async function adjustTemperature(delta) {
+        if (!currentAcDevice) {
+          alert("Phòng này chưa cấu hình máy lạnh.");
+          return;
+        }
+
+        if (currentAcTemp == null) currentAcTemp = 24;
+
+        const newTemp = Math.max(16, Math.min(30, currentAcTemp + delta));
+
+        try {
+          await apiPost(
+            `/devices/${encodeURIComponent(currentAcDevice.device_id)}/commands`,
+            {
+              command_type: "set_temperature",
+              payload: { value: newTemp },
+            }
+          );
+
+          currentAcTemp = newTemp;
+          tempEl.textContent = newTemp.toFixed(1);
+        } catch (err) {
+          console.error("adjustTemperature error", err);
+          alert("Không điều chỉnh được nhiệt độ.");
+        }
+      }
+
+      document
+        .getElementById("temp-increase")
+        .addEventListener("click", () => adjustTemperature(1));
+
+      document
+        .getElementById("temp-decrease")
+        .addEventListener("click", () => adjustTemperature(-1));
+
+      /* ================== LỊCH SỬ THIẾT BỊ ================== */
+
+      function isOnOffMetric(metricType) {
+        const s = (metricType || "").toLowerCase();
+        return (
+          s.includes("state") ||
+          s.includes("onoff") ||
+          s.includes("switch") ||
+          s.includes("power") ||
+          s.includes("relay")
+        );
+      }
+
+      async function loadDeviceHistory(deviceId) {
+        if (!deviceId) {
+          historyTableBody.innerHTML =
+            '<tr><td colspan="4">Chưa chọn thiết bị.</td></tr>';
+          return;
+        }
+
+        historyTableBody.innerHTML =
+          '<tr><td colspan="4">Đang tải dữ liệu...</td></tr>';
+
+        try {
+          const rows = await fetchDeviceTelemetry(deviceId, 200);
+
+          let filtered = rows.filter((r) => isOnOffMetric(r.metric_type));
+          if (!filtered.length) filtered = rows;
+
+          if (!filtered.length) {
+            historyTableBody.innerHTML =
+              '<tr><td colspan="4">Chưa có dữ liệu telemetry.</td></tr>';
+            return;
+          }
+
+          historyTableBody.innerHTML = filtered
+            .map((r) => {
+              const ts = new Date(r.ts).toLocaleString("vi-VN");
+              let eventText = "";
+              let eventClass = "";
+
+              if (isOnOffMetric(r.metric_type)) {
+                if ((r.value ?? 0) >= 0.5) {
+                  eventText = "Bật";
+                  eventClass = "history-event-on";
+                } else {
+                  eventText = "Tắt";
+                  eventClass = "history-event-off";
+                }
+              } else {
+                eventText = r.metric_type || "Giá trị";
+              }
+
+              const note =
+                r.metric_type && isOnOffMetric(r.metric_type)
+                  ? "Trạng thái thiết bị"
+                  : r.metric_type || "";
+
+              return `
+              <tr>
+                <td>${ts}</td>
+                <td class="${eventClass}">${eventText}</td>
+                <td>${r.value != null ? r.value : ""}</td>
+                <td>${note}</td>
+              </tr>`;
+            })
+            .join("");
+        } catch (err) {
+          console.error("loadDeviceHistory error", err);
+          historyTableBody.innerHTML =
+            '<tr><td colspan="4">Lỗi khi tải dữ liệu.</td></tr>';
+        }
+      }
+
+      historyDeviceSelect.addEventListener("change", () => {
+        currentHistoryDeviceId = historyDeviceSelect.value || null;
+        loadDeviceHistory(currentHistoryDeviceId);
+      });
+
+      /* ================== NAVIGATION ================== */
+
+      navItems.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const section = btn.dataset.section;
+
+          navItems.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          if (section === "history") {
+            dashboardSection.style.display = "none";
+            historySection.style.display = "flex";
+            accountSection.style.display = "none";
+
+            mainTitle.textContent = "Lịch sử thiết bị";
+            mainSubtitle.textContent =
+              "Xem thời gian bật / tắt và các telemetry theo từng thiết bị.";
+
+            if (currentHistoryDeviceId) {
+              loadDeviceHistory(currentHistoryDeviceId);
+            } else if (historyDeviceSelect.value) {
+              currentHistoryDeviceId = historyDeviceSelect.value;
+              loadDeviceHistory(currentHistoryDeviceId);
+            }
+          } else if (section === "account") {
+            dashboardSection.style.display = "none";
+            historySection.style.display = "none";
+            accountSection.style.display = "flex";
+
+            mainTitle.textContent = "Tài khoản nhân viên";
+            mainSubtitle.textContent =
+              "Xem thông tin cá nhân và lịch sử check-in / check-out.";
+
+            populateAccountSection();
+          } else {
+            dashboardSection.style.display = "flex";
+            historySection.style.display = "none";
+            accountSection.style.display = "none";
+
+            mainTitle.textContent = "Dashboard phòng";
+            mainSubtitle.textContent =
+              "Xem số người trong phòng, nhiệt độ và điều khiển đèn / quạt.";
+          }
+        });
+      });
+
+      /* ================== CLOCK & THEME ================== */
+
+      function updateClock() {
+        document.getElementById("realtime-clock").textContent =
+          new Date().toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      function applyDashboardTheme() {
+        const hour = new Date().getHours();
+        let theme = "";
+
+        if (hour >= 5 && hour < 11) theme = "Morning1.png";
+        else if (hour >= 11 && hour < 14) theme = "Lunch1.png";
+        else if (hour >= 14 && hour < 18) theme = "Afternoon1.png";
+        else theme = "Night1.png";
+
+        document.body.style.backgroundImage = `url('/static/${theme}')`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundRepeat = "no-repeat";
+        document.body.style.backgroundAttachment = "fixed";
+        document.body.style.backgroundPosition = "center";
+      }
+      applyDashboardTheme();
+      setInterval(applyDashboardTheme, 10 * 60 * 1000);
+
+/* ================== BOOT ================== */
+(async () => {
+  await loadSystemConfig();
+  await initRooms();
+  setupCamera();
+  setInterval(refreshCurrentRoomStatus, 10000);
+})();
+
+    </script>
+  </body>
+</html>
