@@ -7,3 +7,4 @@ __pycache__/
 certs_https/
 mqtt_passwd.txt
 mosquitto_data/
+IoT Control Room/
