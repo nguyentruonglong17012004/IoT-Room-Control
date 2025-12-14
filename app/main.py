@@ -18,6 +18,21 @@ from app.api.routes_frontend import router as frontend_router
 from app.api.routes_system import router as system_router
 from app.api.routes_admin import router as admin_router
 from app.api.routes_attendance import router as attendance_router
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "https://nguyentruonglong17012004.github.io",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 import os
 print("DEBUG CWD =", os.getcwd())
